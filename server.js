@@ -1,50 +1,72 @@
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-
-const app = express();
-app.use(cors());
-app.use(bodyParser.json());
-
-const PORT = process.env.PORT || 3000;
-
-// Users for login
-const users = [
-  { email: "motsimabe@gmail.com", password: "1234" },
-  { email: "admin@mabe.com", password: "admin123" }
-];
-
-// Employee data
-const employees = [
-  { name: "Thato Mabe", position: "Administrator" },
-  { name: "Masego Mosidi", position: "Administrator" },
-  { name: "Cynthia Mabe", position: "Administrator" },
-  { name: "Mapheello Lefalatsa", position: "Administrator" }
-];
-
-// Login route
-app.post("/login", (req, res) => {
-  const { email, password } = req.body;
-  const user = users.find(u => u.email === email && u.password === password);
-
-  if (user) {
-    res.status(200).json({ message: "Login successful" });
-  } else {
-    res.status(401).json({ message: "Invalid credentials" });
+let users = [
+  {
+    name: "Thato Mabe",
+    email: "thato@example.com",
+    password: "1234",
+    position: "Administrator",
+    department: "HR",
+    role: "admin",
+    tasks: [
+      "Review employee attendance reports",
+      "Approve monthly leave applications",
+      "Conduct HR system audit"
+    ],
+    clockIns: [
+      "2025-06-20T08:00:00Z",
+      "2025-06-21T08:03:00Z",
+      "2025-06-22T07:55:00Z"
+    ]
+  },
+  {
+    name: "Cynthia Mabe",
+    email: "cynthia@example.com",
+    password: "abcd",
+    position: "Receptionist",
+    department: "Front Desk",
+    role: "employee",
+    tasks: [
+      "Answer calls and take messages",
+      "Welcome visitors and direct them to appropriate departments",
+      "Update front desk logbook"
+    ],
+    clockIns: [
+      "2025-06-20T08:10:00Z",
+      "2025-06-21T08:05:00Z"
+    ]
+  },
+  {
+    name: "Masego Mosidi",
+    email: "masego@example.com",
+    password: "pass123",
+    position: "Data Clerk",
+    department: "Admin",
+    role: "employee",
+    tasks: [
+      "Enter supplier invoices in the database",
+      "Cross-check employee timesheets",
+      "Update filing system"
+    ],
+    clockIns: [
+      "2025-06-20T08:02:00Z",
+      "2025-06-21T08:04:00Z",
+      "2025-06-22T07:59:00Z"
+    ]
+  },
+  {
+    name: "Mapheello Lefalatsa",
+    email: "mapheello@example.com",
+    password: "pass456",
+    position: "Technician",
+    department: "Maintenance",
+    role: "employee",
+    tasks: [
+      "Inspect site equipment daily",
+      "Fix pending electrical issues",
+      "Update maintenance log"
+    ],
+    clockIns: [
+      "2025-06-20T08:20:00Z",
+      "2025-06-21T08:19:00Z"
+    ]
   }
-});
-
-// Employees route
-app.get('/employees', (req, res) => {
-  res.json(employees);
-});
-
-// Root route
-app.get('/', (req, res) => {
-  res.send('Hello from Mabe Backend!');
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`Mabe backend running on port ${PORT}`);
-});
+];
