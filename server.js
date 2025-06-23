@@ -24,9 +24,7 @@ let users = [
     password: "1234",
     role: "admin",
     status: "offline",
-    clockIns: [],
-    clockOuts: [],
-    tasks: ["Review reports", "Manage platform"]
+    clockIns: []
   },
   {
     name: "Thato Mabe",
@@ -34,9 +32,7 @@ let users = [
     password: "1234",
     role: "employee",
     status: "offline",
-    clockIns: [],
-    clockOuts: [],
-    tasks: ["Maintain equipment", "Daily log"]
+    clockIns: []
   },
   {
     name: "Cynthia Mabe",
@@ -44,13 +40,10 @@ let users = [
     password: "abcd",
     role: "employee",
     status: "offline",
-    clockIns: [],
-    clockOuts: [],
-    tasks: ["Monitor levels", "Send daily email"]
+    clockIns: []
   }
 ];
 
-// Real-time tracking
 io.on('connection', (socket) => {
   console.log('🟢 A user connected');
 
@@ -58,7 +51,7 @@ io.on('connection', (socket) => {
     const user = users.find(u => u.email === email);
     if (user) {
       user.status = "online";
-      user.clockIns.push(new Date());
+      user.clockIns.push(new Date().toISOString());
       io.emit('userStatusUpdate', users);
     }
   });
@@ -67,14 +60,14 @@ io.on('connection', (socket) => {
     const user = users.find(u => u.email === email);
     if (user) {
       user.status = "offline";
-      user.clockOuts.push(new Date());
+      user.clockIns.push(new Date().toISOString()); // clock-out time
       io.emit('userStatusUpdate', users);
+      console.log(`🔴 ${email} logged out`);
     }
   });
 
   socket.on('disconnect', () => {
     console.log('🔴 A user disconnected');
-    // Optional: track offline if you had user socket IDs
   });
 });
 
