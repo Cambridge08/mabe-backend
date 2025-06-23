@@ -19,10 +19,18 @@ const PORT = process.env.PORT || 3000;
 
 let users = [
   {
+    name: "Cambridge Mabe",
+    email: "motsimabe@gmail.com",
+    password: "1234",
+    role: "admin",
+    status: "offline",
+    clockIns: []
+  },
+  {
     name: "Thato Mabe",
     email: "thato@example.com",
     password: "1234",
-    role: "admin",
+    role: "employee",
     status: "offline",
     clockIns: []
   },
@@ -50,7 +58,7 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log('🔴 A user disconnected');
-    // You can add logic to mark user offline after timeout
+    // Optionally add logic here to mark user offline after timeout
   });
 });
 
