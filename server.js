@@ -24,7 +24,9 @@ let users = [
     password: "1234",
     role: "admin",
     status: "offline",
-    clockIns: []
+    clockIns: [],
+    clockOuts: [],
+    tasks: ["Review reports", "Manage platform"]
   },
   {
     name: "Thato Mabe",
@@ -32,7 +34,9 @@ let users = [
     password: "1234",
     role: "employee",
     status: "offline",
-    clockIns: []
+    clockIns: [],
+    clockOuts: [],
+    tasks: ["Maintain equipment", "Daily log"]
   },
   {
     name: "Cynthia Mabe",
@@ -40,11 +44,13 @@ let users = [
     password: "abcd",
     role: "employee",
     status: "offline",
-    clockIns: []
+    clockIns: [],
+    clockOuts: [],
+    tasks: ["Monitor levels", "Send daily email"]
   }
 ];
 
-// Socket.IO real-time handling
+// Real-time tracking
 io.on('connection', (socket) => {
   console.log('🟢 A user connected');
 
@@ -52,9 +58,8 @@ io.on('connection', (socket) => {
     const user = users.find(u => u.email === email);
     if (user) {
       user.status = "online";
-      user.clockIns.push(`Clocked in at: ${new Date().toLocaleString()}`);
-      io.emit('userStatusUpdate', users.map(({ password, ...rest }) => rest));
-      console.log(`${user.name} logged in`);
+      user.clockIns.push(new Date());
+      io.emit('userStatusUpdate', users);
     }
   });
 
@@ -62,18 +67,17 @@ io.on('connection', (socket) => {
     const user = users.find(u => u.email === email);
     if (user) {
       user.status = "offline";
-      user.clockIns.push(`Clocked out at: ${new Date().toLocaleString()}`);
-      io.emit('userStatusUpdate', users.map(({ password, ...rest }) => rest));
-      console.log(`${user.name} logged out`);
+      user.clockOuts.push(new Date());
+      io.emit('userStatusUpdate', users);
     }
   });
 
   socket.on('disconnect', () => {
     console.log('🔴 A user disconnected');
+    // Optional: track offline if you had user socket IDs
   });
 });
 
-// API login
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
   const user = users.find(u => u.email === email && u.password === password);
@@ -85,13 +89,11 @@ app.post('/login', (req, res) => {
   }
 });
 
-// All employees
 app.get('/employees', (req, res) => {
   const allUsers = users.map(({ password, ...rest }) => rest);
   res.json(allUsers);
 });
 
-// Single employee
 app.get('/employee/:email', (req, res) => {
   const user = users.find(u => u.email === req.params.email);
   if (user) {
@@ -103,5 +105,5 @@ app.get('/employee/:email', (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`✅ Backend with Socket.IO running on port ${PORT}`);
+  console.log(`✅ Mabe backend with Socket.IO running on port ${PORT}`);
 });
