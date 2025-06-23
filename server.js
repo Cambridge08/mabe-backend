@@ -24,7 +24,8 @@ let users = [
     password: "1234",
     role: "admin",
     status: "offline",
-    clockIns: []
+    clockIns: [],
+    tasks: []
   },
   {
     name: "Thato Mabe",
@@ -32,7 +33,8 @@ let users = [
     password: "1234",
     role: "employee",
     status: "offline",
-    clockIns: []
+    clockIns: [],
+    tasks: []
   },
   {
     name: "Cynthia Mabe",
@@ -40,10 +42,12 @@ let users = [
     password: "abcd",
     role: "employee",
     status: "offline",
-    clockIns: []
+    clockIns: [],
+    tasks: []
   }
 ];
 
+// Socket.IO setup
 io.on('connection', (socket) => {
   console.log('🟢 A user connected');
 
@@ -71,6 +75,7 @@ io.on('connection', (socket) => {
   });
 });
 
+// Login route
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
   const user = users.find(u => u.email === email && u.password === password);
@@ -82,11 +87,13 @@ app.post('/login', (req, res) => {
   }
 });
 
+// Get all employees (admin)
 app.get('/employees', (req, res) => {
   const allUsers = users.map(({ password, ...rest }) => rest);
   res.json(allUsers);
 });
 
+// Get a single employee by email
 app.get('/employee/:email', (req, res) => {
   const user = users.find(u => u.email === req.params.email);
   if (user) {
@@ -95,6 +102,37 @@ app.get('/employee/:email', (req, res) => {
   } else {
     res.status(404).json({ message: 'User not found' });
   }
+});
+
+// Add new employee (admin only)
+app.post('/add-employee', (req, res) => {
+  const { name, email, password, role, department, position } = req.body;
+
+  if (!name || !email || !password || !role) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
+
+  const existing = users.find(u => u.email === email);
+  if (existing) {
+    return res.status(400).json({ message: 'Employee already exists' });
+  }
+
+  const newEmployee = {
+    name,
+    email,
+    password,
+    role,
+    department: department || '',
+    position: position || '',
+    status: 'offline',
+    clockIns: [],
+    tasks: []
+  };
+
+  users.push(newEmployee);
+  io.emit('userStatusUpdate', users);
+
+  res.status(201).json({ message: 'Employee added successfully' });
 });
 
 server.listen(PORT, () => {
