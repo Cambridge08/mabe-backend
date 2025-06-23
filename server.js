@@ -5,11 +5,9 @@ const http = require('http');
 const socketIo = require('socket.io');
 
 const app = express();
-const server = http.createServer(app); // Wrap express in HTTP server
+const server = http.createServer(app);
 const io = socketIo(server, {
-  cors: {
-    origin: '*',
-  }
+  cors: { origin: '*' },
 });
 
 app.use(cors());
@@ -24,6 +22,13 @@ let users = [
     password: "1234",
     role: "admin",
     status: "offline",
+    position: "Boss",
+    department: "Management",
+    tasks: [
+      "Oversee operations",
+      "Approve budgets",
+      "Conduct meetings"
+    ],
     clockIns: []
   },
   {
@@ -32,6 +37,13 @@ let users = [
     password: "1234",
     role: "employee",
     status: "offline",
+    position: "Developer",
+    department: "IT",
+    tasks: [
+      "Write code",
+      "Fix bugs",
+      "Deploy apps"
+    ],
     clockIns: []
   },
   {
@@ -40,31 +52,42 @@ let users = [
     password: "abcd",
     role: "employee",
     status: "offline",
+    position: "Receptionist",
+    department: "Front Desk",
+    tasks: [
+      "Answer calls",
+      "Manage visitors",
+      "Schedule appointments"
+    ],
     clockIns: []
   }
 ];
 
-// Real-time tracking
+// Socket.io for real-time status updates
 io.on('connection', (socket) => {
-  console.log('🟢 A user connected');
+  console.log('A user connected');
 
   socket.on('login', (email) => {
     const user = users.find(u => u.email === email);
     if (user) {
       user.status = "online";
-      io.emit('userStatusUpdate', users); // send updated list to all
+      user.clockIns.push(new Date().toISOString());
+      io.emit('userStatusUpdate', users.map(({ password, ...rest }) => rest));
+      console.log(`${user.name} is online`);
     }
   });
 
   socket.on('disconnect', () => {
-    console.log('🔴 A user disconnected');
-    // Optionally add logic here to mark user offline after timeout
+    // Optional: You can handle disconnect here
+    console.log('A user disconnected');
   });
 });
 
+// Login endpoint
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
   const user = users.find(u => u.email === email && u.password === password);
+
   if (user) {
     const { password, ...safeUser } = user;
     res.status(200).json({ message: 'Login successful', user: safeUser });
@@ -73,11 +96,13 @@ app.post('/login', (req, res) => {
   }
 });
 
+// Get all employees (for admin)
 app.get('/employees', (req, res) => {
-  const allUsers = users.map(({ password, ...rest }) => rest);
-  res.json(allUsers);
+  const safeUsers = users.map(({ password, ...rest }) => rest);
+  res.json(safeUsers);
 });
 
+// Get single employee data
 app.get('/employee/:email', (req, res) => {
   const user = users.find(u => u.email === req.params.email);
   if (user) {
@@ -89,5 +114,5 @@ app.get('/employee/:email', (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Mabe backend with Socket.IO running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
