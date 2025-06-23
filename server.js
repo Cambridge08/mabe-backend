@@ -27,3 +27,7 @@ app.post("/login", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Mabe backend running on port ${PORT}`);
 });
+
+app.get('/', (req, res) => {
+  res.send('Hello from Mabe Backend!');
+});
