@@ -6,148 +6,70 @@ const socketIo = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server, {
-  cors: {
-    origin: '*',
-  }
-});
+const io = socketIo(server, { cors: { origin: '*' } });
 
 app.use(cors());
 app.use(bodyParser.json());
 
 const PORT = process.env.PORT || 3000;
-
 let users = [
-  {
-    name: "Cambridge Mabe",
-    email: "motsimabe@gmail.com",
-    password: "1234",
-    role: "admin",
-    status: "offline",
-    clockIns: [],
-    tasks: []
-  },
-  {
-    name: "Thato Mabe",
-    email: "thato@example.com",
-    password: "1234",
-    role: "employee",
-    status: "offline",
-    clockIns: [],
-    tasks: []
-  },
-  {
-    name: "Cynthia Mabe",
-    email: "cynthia@example.com",
-    password: "abcd",
-    role: "employee",
-    status: "offline",
-    clockIns: [],
-    tasks: []
-  }
+  { name: "Cambridge Mabe", email: "motsimabe@gmail.com", password: "1234", role: "admin", status: "offline", clockIns: [], tasks: [] },
+  { name: "Thato Mabe", email: "thato@example.com", password: "1234", role: "employee", status: "offline", clockIns: [], tasks: [] },
+  { name: "Cynthia Mabe", email: "cynthia@example.com", password: "abcd", role: "employee", status: "offline", clockIns: [], tasks: [] },
 ];
 
-// Socket.IO setup
-io.on('connection', (socket) => {
-  console.log('🟢 A user connected');
-
-  socket.on('login', (email) => {
-    const user = users.find(u => u.email === email);
-    if (user) {
-      user.status = "online";
-      user.clockIns.push(new Date().toISOString());
-      io.emit('userStatusUpdate', users);
-    }
+// Socket events
+io.on('connection', socket => {
+  console.log('User connected');
+  socket.on('login', email => {
+    const u = users.find(x => x.email === email);
+    if (u) { u.status = 'online'; u.clockIns.push(new Date().toISOString()); io.emit('userStatusUpdate'); }
   });
-
-  socket.on('logout', (email) => {
-    const user = users.find(u => u.email === email);
-    if (user) {
-      user.status = "offline";
-      user.clockIns.push(new Date().toISOString()); // clock-out time
-      io.emit('userStatusUpdate', users);
-      console.log(`🔴 ${email} logged out`);
-    }
-  });
-
-  socket.on('disconnect', () => {
-    console.log('🔴 A user disconnected');
+  socket.on('logout', email => {
+    const u = users.find(x => x.email === email);
+    if (u) { u.status = 'offline'; u.clockIns.push(new Date().toISOString()); io.emit('userStatusUpdate'); }
   });
 });
 
-// Login route
+// Routes
 app.post('/login', (req, res) => {
-  const { email, password } = req.body;
-  const user = users.find(u => u.email === email && u.password === password);
-  if (user) {
-    const { password, ...safeUser } = user;
-    res.status(200).json({ message: 'Login successful', user: safeUser });
-  } else {
-    res.status(401).json({ message: 'Invalid credentials' });
-  }
+  const u = users.find(x => x.email === req.body.email && x.password === req.body.password);
+  if (!u) return res.status(401).json({ message: 'Invalid credentials' });
+  const safe = { ...u }; delete safe.password;
+  res.json({ message: 'Login successful', user: safe });
 });
 
-// Clock out route (added)
 app.post('/clockout/:email', (req, res) => {
-  const user = users.find(u => u.email === req.params.email);
-  if (user) {
-    user.status = 'offline';
-    user.clockIns.push(new Date().toISOString());
-    io.emit('userStatusUpdate', users);
-    return res.json({ message: 'Clocked out successfully' });
-  } else {
-    return res.status(404).json({ message: 'User not found' });
-  }
+  const u = users.find(x => x.email === req.params.email);
+  if (!u) return res.status(404).json({ message: 'User not found' });
+  u.status = 'offline';
+  u.clockIns.push(new Date().toISOString());
+  io.emit('userStatusUpdate');
+  res.json({ message: 'Clocked out' });
 });
 
-// Get all employees (admin)
 app.get('/employees', (req, res) => {
-  const allUsers = users.map(({ password, ...rest }) => rest);
-  res.json(allUsers);
+  const data = users.map(u => { const { password, ...rest } = u; return rest; });
+  res.json(data);
 });
 
-// Get a single employee by email
 app.get('/employee/:email', (req, res) => {
-  const user = users.find(u => u.email === req.params.email);
-  if (user) {
-    const { password, ...userData } = user;
-    res.json(userData);
-  } else {
-    res.status(404).json({ message: 'User not found' });
-  }
+  const u = users.find(x => x.email === req.params.email);
+  if (!u) return res.status(404).json({ message: 'User not found' });
+  const { password, ...rest } = u;
+  res.json(rest);
 });
 
-// Add new employee (admin only)
 app.post('/add-employee', (req, res) => {
-  const { name, email, password, role, department, position } = req.body;
-
-  if (!name || !email || !password || !role) {
-    return res.status(400).json({ message: 'Missing required fields' });
-  }
-
-  const existing = users.find(u => u.email === email);
-  if (existing) {
-    return res.status(400).json({ message: 'Employee already exists' });
-  }
-
-  const newEmployee = {
-    name,
-    email,
-    password,
-    role,
-    department: department || '',
-    position: position || '',
-    status: 'offline',
-    clockIns: [],
-    tasks: []
-  };
-
-  users.push(newEmployee);
-  io.emit('userStatusUpdate', users);
-
-  res.status(201).json({ message: 'Employee added successfully' });
+  const { name, email, password, role } = req.body;
+  if (!name || !email || !password || !role) return res.status(400).json({ message: 'Missing fields' });
+  if (users.find(x => x.email === email)) return res.status(400).json({ message: 'Employee exists' });
+  const newEmp = { name, email, password, role, status: 'offline', clockIns: [], tasks: [] };
+  users.push(newEmp);
+  io.emit('userStatusUpdate');
+  res.status(201).json({ message: 'Employee added' });
 });
 
 server.listen(PORT, () => {
-  console.log(`✅ Mabe backend with Socket.IO running on port ${PORT}`);
+  console.log(`Backend running at http://localhost:${PORT}`);
 });
